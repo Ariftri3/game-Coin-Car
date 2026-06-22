@@ -6,11 +6,15 @@ public class CheckPoint : MonoBehaviour
     {
         if(other.CompareTag("Player"))
         {
-            Score.storedCoin += Score.coinA;
+            int coinDisimpan = Score.coinA;
 
-            Timer.timeLeft += Score.coinA * 5;
+            Score.storedCoin += coinDisimpan;
+
+            Timer.timeLeft += coinDisimpan * 5;
 
             Score.coinA = 0;
+
+            Debug.Log("Coin tersimpan: " + Score.storedCoin);
         }
     }
 }

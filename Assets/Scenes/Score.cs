@@ -8,7 +8,7 @@ public class Score : MonoBehaviour
     public static int coinA = 0;
     public static int storedCoin = 0;
 
-    public static int maxCoin = 5;
+    public static int maxCoin = 10;
 
     void Start()
     {
