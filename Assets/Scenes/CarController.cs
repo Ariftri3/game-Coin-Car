@@ -1,6 +1,5 @@
 using UnityEngine;
-// 1. Wajib menambahkan namespace Input System baru
-using UnityEngine.InputSystem; 
+using UnityEngine.InputSystem;
 
 public class CarController : MonoBehaviour
 {
@@ -10,7 +9,7 @@ public class CarController : MonoBehaviour
     public WheelCollider backLeftCollider;
     public WheelCollider backRightCollider;
 
-    [Header("Wheel Meshes (Visual)")]
+    [Header("Wheel Meshes")]
     public Transform frontLeftMesh;
     public Transform frontRightMesh;
     public Transform backLeftMesh;
@@ -27,72 +26,84 @@ public class CarController : MonoBehaviour
 
     void Update()
     {
-        // 2. Mengambil input menggunakan Input System baru (Keyboard/Gamepad otomatis terdeteksi)
-        
-        // Membaca input WASD atau Arrow Keys untuk berbelok (A/D atau Left/Right)
+        horizontalInput = 0;
+        verticalInput = 0;
+        isBraking = false;
+
+        // Keyboard
         if (Keyboard.current != null)
         {
-            // Input Horizontal (A/D atau Kiri/Kanan)
-            horizontalInput = 0f;
-            if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) horizontalInput = 1f;
-            if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) horizontalInput = -1f;
+            if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed)
+                horizontalInput = -1;
 
-            // Input Vertical (W/S atau Atas/Bawah)
-            verticalInput = 0f;
-            if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) verticalInput = 1f;
-            if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) verticalInput = -1f;
+            if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed)
+                horizontalInput = 1;
 
-            // Input Rem (Spasi)
-            isBraking = Keyboard.current.spaceKey.isPressed;
+            if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed)
+                verticalInput = 1;
+
+            if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed)
+                verticalInput = -1;
+
+            if (Keyboard.current.spaceKey.isPressed)
+                isBraking = true;
         }
+
+        // Mobile
+        if (Mathf.Abs(MobileInput.Horizontal) > 0.1f)
+            horizontalInput = MobileInput.Horizontal;
+
+        if (MobileInput.Vertical != 0)
+            verticalInput = MobileInput.Vertical;
+
+        if (MobileInput.Brake)
+            isBraking = true;
     }
 
     void FixedUpdate()
     {
-        // Tetap sama karena urusan fisika tidak berubah
         HandleMotor();
         HandleSteering();
         UpdateWheelPoses();
     }
 
-    private void HandleMotor()
+    void HandleMotor()
     {
         backLeftCollider.motorTorque = verticalInput * motorForce;
         backRightCollider.motorTorque = verticalInput * motorForce;
 
         float currentBrake = isBraking ? brakeForce : 0f;
-        ApplyBraking(currentBrake);
+
+        frontLeftCollider.brakeTorque = currentBrake;
+        frontRightCollider.brakeTorque = currentBrake;
+        backLeftCollider.brakeTorque = currentBrake;
+        backRightCollider.brakeTorque = currentBrake;
     }
 
-    private void ApplyBraking(float force)
+    void HandleSteering()
     {
-        frontLeftCollider.brakeTorque = force;
-        frontRightCollider.brakeTorque = force;
-        backLeftCollider.brakeTorque = force;
-        backRightCollider.brakeTorque = force;
+        float steer = horizontalInput * maxSteerAngle;
+
+        frontLeftCollider.steerAngle = steer;
+        frontRightCollider.steerAngle = steer;
     }
 
-    private void HandleSteering()
+    void UpdateWheelPoses()
     {
-        float currentSteerAngle = horizontalInput * maxSteerAngle;
-        frontLeftCollider.steerAngle = currentSteerAngle;
-        frontRightCollider.steerAngle = currentSteerAngle;
+        UpdateWheel(frontLeftCollider, frontLeftMesh);
+        UpdateWheel(frontRightCollider, frontRightMesh);
+        UpdateWheel(backLeftCollider, backLeftMesh);
+        UpdateWheel(backRightCollider, backRightMesh);
     }
 
-    private void UpdateWheelPoses()
-    {
-        UpdateSingleWheel(frontLeftCollider, frontLeftMesh);
-        UpdateSingleWheel(frontRightCollider, frontRightMesh);
-        UpdateSingleWheel(backLeftCollider, backLeftMesh);
-        UpdateSingleWheel(backRightCollider, backRightMesh);
-    }
-
-    private void UpdateSingleWheel(WheelCollider wheelCollider, Transform wheelTransform)
+    void UpdateWheel(WheelCollider col, Transform wheel)
     {
         Vector3 pos;
         Quaternion rot;
-        wheelCollider.GetWorldPose(out pos, out rot);
-        wheelTransform.position = pos;
-        wheelTransform.rotation = rot;
+
+        col.GetWorldPose(out pos, out rot);
+
+        wheel.position = pos;
+        wheel.rotation = rot;
     }
 }
